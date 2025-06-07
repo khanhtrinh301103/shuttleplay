@@ -1,124 +1,104 @@
-Dưới đây là đoạn **“Getting Started”** bạn có thể thêm vào README (hoặc một file `SETUP.md`) ở root repo. Các dev chỉ cần clone về, chạy theo các bước này là có đủ môi trường backend + frontend.
+Dưới đây là mẫu **“Getting Started”** cập nhật dành riêng cho Windows PowerShell — bạn có thể dán vào `README.md` hoặc `SETUP.md` ở root repo để mọi dev pull về chỉ việc **PowerShell**:
 
 ````markdown
-## 🚀 Getting Started
+## 🚀 Getting Started (Windows PowerShell)
 
 ### 1. Prerequisites
-- **Node.js** ≥ 16.x, **npm** (hoặc **yarn** ≥ 1.x)
-- **PHP** ≥ 8.0, **Composer**
+- **Node.js** ≥ 16.x & **npm** (hoặc **yarn** ≥ 1.x)
+- **PHP** ≥ 8.0 & **Composer**
 - **Git**
-- (Tùy chọn) Docker & Docker Compose nếu muốn chạy container
+- (Tùy chọn) Docker & Docker Compose
 
-### 2. Clone repository
-```bash
+---
+
+### 2. Clone repo & vào thư mục
+```powershell
 git clone git@github.com:you/shuttleplay.git
-cd shuttleplay
+Set-Location shuttleplay
 ````
 
 ---
 
-### 3. Cài đặt & chạy Backend (Laravel Headless API)
+### 3. Backend (Laravel Headless API)
 
-1. Di chuyển vào thư mục backend:
+```powershell
+# 3.1 Vào folder backend
+Set-Location .\backend
 
-   ```bash
-   cd backend
-   ```
+# 3.2 Cài composer và copy .env
+composer install
+Copy-Item .env.example .env
 
-2. Sao chép file môi trường và sinh APP\_KEY:
+# 3.3 Sinh APP_KEY
+php artisan key:generate
 
-   ```bash
-   cp .env.example .env
-   composer install
-   php artisan key:generate
-   ```
+# (Tương lai) chỉnh kết nối Supabase trong .env:
+# DB_CONNECTION=pgsql
+# DB_HOST=<YOUR_SUPABASE_HOST>
+# DB_PORT=5432
+# DB_DATABASE=<YOUR_SUPABASE_DB>
+# DB_USERNAME=<YOUR_SUPABASE_USER>
+# DB_PASSWORD=<YOUR_SUPABASE_PASSWORD>
 
-3. (Tương lai) Cấu hình kết nối database Supabase trong `.env`:
-
-   ```env
-   DB_CONNECTION=pgsql
-   DB_HOST=<SUPABASE_HOST>
-   DB_PORT=5432
-   DB_DATABASE=<SUPABASE_DB>
-   DB_USERNAME=<SUPABASE_USER>
-   DB_PASSWORD=<SUPABASE_PASSWORD>
-   ```
-
-4. Chạy server:
-
-   ```bash
-   php artisan serve --host=0.0.0.0 --port=8000
-   ```
-
-   → Backend API sẵn sàng tại **[http://localhost:8000/api/](http://localhost:8000/api/)**
+# 3.4 Chạy server
+php artisan serve --host=0.0.0.0 --port=8000
+# → API sẵn sàng tại http://localhost:8000/api/
+```
 
 ---
 
-### 4. Cài đặt & chạy Frontend (React + TS + Tailwind)
+### 4. Frontend (React + TS + Tailwind)
 
-1. Mở terminal mới, về thư mục gốc và chuyển vào frontend:
+Mở tab PowerShell mới:
 
-   ```bash
-   cd ../frontend
-   ```
+```powershell
+# 4.1 Về lại root rồi vào frontend
+Set-Location ..\frontend
 
-2. Cài dependencies:
+# 4.2 Cài npm packages
+npm install
+# hoặc: yarn install
 
-   ```bash
-   npm install
-   # hoặc yarn install
-   ```
+# 4.3 (Nếu cần) điều chỉnh BFF URL trong .env
+# Copy-Item .env.example .env
+# Edit-Item .env (hoặc mở file bằng editor)
+# REACT_APP_BFF_API_URL=http://localhost:8000/api
 
-3. (Nếu có thay đổi BFF URL) Tùy chỉnh `.env`:
-
-   ```env
-   REACT_APP_BFF_API_URL=http://localhost:8000/api
-   ```
-
-4. Chạy dev server:
-
-   ```bash
-   npm start
-   # hoặc yarn start
-   ```
-
-   → Frontend sẵn sàng tại **[http://localhost:3000](http://localhost:3000)**
+# 4.4 Chạy dev server
+npm start
+# hoặc: yarn start
+# → Frontend chạy tại http://localhost:3000
+```
 
 ---
 
-### 5. Thử nghiệm nhanh
+### 5. Quick Test
 
-* Mở trình duyệt tới **[http://localhost:3000](http://localhost:3000)** để kiểm tra UI
-* Gọi API thử tại **[http://localhost:8000/api/bff](http://localhost:8000/api/bff)** (GET) → nên nhận JSON response
-
----
-
-### 6. Docker (Tùy chọn)
-
-Nếu muốn chạy bằng Docker Compose:
-
-1. Tạo file `.env.docker` hoặc bổ sung biến môi trường trong `docker-compose.yml`
-2. Chạy:
-
-   ```bash
-   docker-compose up --build
-   ```
-3. Truy cập:
-
-   * Backend: [http://localhost:8000](http://localhost:8000)
-   * Frontend: [http://localhost:3000](http://localhost:3000)
+* Gõ vào trình duyệt `http://localhost:3000` — nếu thấy giao diện “Hello World!”, frontend OK.
+* Gọi API `GET http://localhost:8000/api/bff` — nếu postman nhận JSON, backend OK.
 
 ---
 
-### 7. FAQs
+### 6. (Tùy chọn) Docker Compose
 
-* **Lỗi “APP\_KEY not set”?** Chạy `php artisan key:generate`
-* **Không thấy Tailwind chạy?** Kiểm tra `postcss.config.js` & `tailwind.config.js` trong `frontend/`
-* **Muốn chạy test?** Chưa có test suite, dev sẽ tự thêm sau này.
+Nếu muốn triển khai container:
+
+```powershell
+Set-Location ..  # quay về root
+docker-compose up --build
+# → Backend: http://localhost:8000
+# → Frontend: http://localhost:3000
+```
 
 ---
 
-> **Chúc các bạn dev môi trường suôn sẻ!** 🚀
+> **Lưu ý**:
+>
+> * Mọi lệnh trên đều dùng **PowerShell** (Windows).
+> * Nếu gặp lỗi “php not found”, kiểm tra PATH; tương tự với `composer` và `npm`.
+> * Mọi thay đổi môi trường (Supabase, ports…) đều nằm trong file `.env` tương ứng.
+
+Chúc mọi người pull về lập tức chạy được full-stack app mà không mất công cài lại môi trường! 🎉
 
 ```
 ```
