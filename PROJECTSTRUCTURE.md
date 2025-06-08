@@ -1,34 +1,121 @@
 ShuttlePlay/
 ├── backend/                                --> Laravel API server (Headless API Only)
 │   ├── app/
+│   │   ├── Console/
+│   │   │   ├── Kernel.php
+│   │   ├── Exceptions/
+│   │   │   ├── Handler.php
 │   │   ├── Http/                          
 │   │   │   ├── Controllers/                --> Chứa toàn bộ các API Controller
 │   │   │   │   ├── Api/
 │   │   │   │   │   ├── BffController.php          --> Xử lý Universal API (/api/bff)
 │   │   │   │   │   ├── AuthController.php         --> Xử lý Login/Register → trả token
 │   │   │   │   │   ├── CheckoutController.php     --> Xử lý luồng Checkout → tạo đơn hàng
+│   │   │   │   │   ├── Controller.php
 │   │   │   │   │   ├── MessageController.php      --> Xử lý Messaging → gửi/nhận message
 │   │   │   │   │   ├── UserController.php         --> Admin quản lý User (CRUD user)
-│   │   │   ├── Middleware/                 
+│   │   │   ├── Middleware/   
+│   │   │   │   ├── Authenticate.php
+│   │   │   │   ├── EncryptCookies.php
+│   │   │   │   ├── PreventRequestsDuringMaintenance.php
+│   │   │   │   ├── RedirectIfAuthenticated.php              
 │   │   │   │   ├── RoleCheckMiddleware.php        --> Middleware kiểm tra quyền Role khi call /api/bff
+│   │   │   │   ├── TrimStrings.php
+│   │   │   │   ├── TrustHosts.php
+│   │   │   │   ├── TrustProxies.php
+│   │   │   │   ├── ValidateSignature.php
+│   │   │   │   ├── VerifyCsrfToken.php
 │   │   │   ├── Requests/                   --> Chứa Form Validation cho các API (LoginRequest, CheckoutRequest, ...)
 │   │   │   ├── Resources/                  --> Chuẩn hóa API response (OrderResource, ProductResource, ...)
+│   │   │   ├── Kernel.php
 │   │   ├── Models/                         --> Chứa các model chính (User.php, Product.php, Order.php, Message.php, ...)
+│   │   │   ├── User.php
+│   │   ├── Providers/
+│   │   │   ├── AppServiceProvider.php
+│   │   │   ├── AuthServiceProvider.php
+│   │   │   ├── BroadcastServiceProvider.php
+│   │   │   ├── EventServiceProvider.php
+│   │   │   ├── RouteServiceProvider.php
 │   │   ├── Services/                       --> Tầng xử lý Business Logic riêng → tránh fat controller
 │   │   │   ├── OrderService.php                  --> Xử lý nghiệp vụ đặt hàng
 │   │   │   ├── PaymentService.php                --> Xử lý nghiệp vụ thanh toán (nếu có)
+│   ├── bootstrap/
+│   │   ├── cache/
+│   │   │   ├── .gitignore
+│   │   │   ├── packages.php
+│   │   │   ├── services.php
+│   │   ├── app.php
 │   ├── config/                             --> Cấu hình Laravel + package
 │   ├── database/
+│   │   ├── factories/
+│   │   │   ├── UserFactory.php
 │   │   ├── migrations/                     --> Migration tạo DB schema
+│   │   │   ├── 2014_10_12_000000_create_users_table.php
+│   │   │   ├── 2014_10_12_100000_create_password_resets_table.php
+│   │   │   ├── 2019_08_19_000000_create_failed_jobs_table.php
+│   │   │   ├── 2019_12_14_000001_create_personal_access_tokens_table.php
 │   │   ├── seeders/                        --> Seeder để tạo sẵn dữ liệu mẫu
+│   │   │   ├── DatabaseSeeder.php
+│   │   ├── .gitignore
+│   ├── lang/en/
+│   ├── public/                             --> Public entry Laravel (chứa index.php + asset public nếu có)
+│   │   ├──.htaccess
+│   │   ├── favicon.ico
+│   │   ├── index.php
+│   │   ├── robots.txt
+│   ├── resources/
+│   │   ├── css/
+│   │   │   ├── app.css
+│   │   ├── js/
+│   │   │   ├── app.js
+│   │   │   ├── bootstrap.js
+│   │   ├── views
+│   │   │   ├── welcome.blade.php
 │   ├── routes/
 │   │   ├── api.php                         --> Define các API route (Universal API + Transactional API)
+│   │   ├── channels.php
+│   │   ├── console.php
+│   │   ├── web.php
+│   ├── storage/
+│   │   ├── app/
+│   │   │   ├── public/
+│   │   │   │   ├── .gitignore
+│   │   │   ├── .gitignore
+│   │   ├── framework/
+│   │   │   ├── cache/
+│   │   │   │   ├── data/
+│   │   │   ├── sessions/
+│   │   │   │   ├── .gitignore
+│   │   │   ├── testing
+│   │   │   │   ├── .gitignore
+│   │   │   ├── views
+│   │   ├── logs
 │   ├── tests/                              --> Unit tests với PHPUnit
-│   ├── public/                             --> Public entry Laravel (chứa index.php + asset public nếu có)
+│   │   │   ├── Feature/
+│   │   │   │   ├── exampleTest.php
+│   │   │   ├── Unit/
+│   │   │   │   ├── exampleTest.php
+│   │   │   ├── CreatesApplication.php
+│   │   │   ├── TestCase.php
+│   ├── vendor/
+│   ├── .editorconfig
 │   ├── .env                                --> Environment variable cho Laravel API
+│   ├── .env.example
+│   ├── .gitattributes
+│   ├── .gitignore
+│   ├── .styleci.yml
+│   ├── artisan
+│   ├── CHANGELOG.md
 │   ├── composer.json                       --> Manage Laravel packages (dependency)
+│   ├── composer.lock
+│   ├── package-lock.json
+│   ├── package.json
+│   ├── phpunit.xml
+│   ├── README.md
+│   ├── vite.config.js
 │
 └── frontend/                               --> React SPA project (Headless UI, gọi API riêng)
+    ├── node_modules/
     ├── public/                             --> Static file public (favicon, index.html)
     ├── src/
     │   ├── api/                            --> Nơi tập trung các file call API
