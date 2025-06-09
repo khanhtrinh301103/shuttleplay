@@ -45,7 +45,22 @@ ShuttlePlay/
 │   │   │   ├── packages.php
 │   │   │   ├── services.php
 │   │   ├── app.php
-│   ├── config/                             --> Cấu hình Laravel + package
+│   ├── config/
+│   │   ├── app.php
+│   │   ├── auth.php
+│   │   ├── broadcasting.php
+│   │   ├── cache.php
+│   │   ├── cors.php
+│   │   ├── database.php
+│   │   ├── filesystems.php
+│   │   ├── hashing.php
+│   │   ├── logging.php
+│   │   ├── mail.php
+│   │   ├── queue.php
+│   │   ├── sanctum.php
+│   │   ├── services.php
+│   │   ├── session.php
+│   │   ├── view.php
 │   ├── database/
 │   │   ├── factories/
 │   │   │   ├── UserFactory.php
