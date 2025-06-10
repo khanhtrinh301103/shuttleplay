@@ -8,8 +8,8 @@ ShuttlePlay/
 │   │   ├── Http/                          
 │   │   │   ├── Controllers/                --> Chứa toàn bộ các API Controller
 │   │   │   │   ├── Api/
-│   │   │   │   │   ├── BffController.php          --> Xử lý Universal API (/api/bff)
 │   │   │   │   │   ├── AuthController.php         --> Xử lý Login/Register → trả token
+│   │   │   │   │   ├── BffController.php          --> Xử lý Universal API (/api/bff)
 │   │   │   │   │   ├── CheckoutController.php     --> Xử lý luồng Checkout → tạo đơn hàng
 │   │   │   │   │   ├── Controller.php
 │   │   │   │   │   ├── MessageController.php      --> Xử lý Messaging → gửi/nhận message
