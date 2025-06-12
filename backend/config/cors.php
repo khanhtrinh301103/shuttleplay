@@ -1,4 +1,5 @@
 <?php
+// File location: backend/config/cors.php
 
 return [
 
@@ -19,7 +20,12 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['http://localhost:3000'],
+    'allowed_origins' => [
+        'http://localhost:3000', // React development server
+        'http://localhost:3001',
+        'http://127.0.0.1:3000',
+        // Thêm domain production của bạn ở đây khi deploy
+    ],
 
     'allowed_origins_patterns' => [],
 
@@ -29,6 +35,6 @@ return [
 
     'max_age' => 0,
 
-    'supports_credentials' => false,
+    'supports_credentials' => true,
 
 ];

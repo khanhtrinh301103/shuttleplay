@@ -1,4 +1,5 @@
 <?php
+// File location: backend/app/Models/User.php
 
 namespace App\Models;
 
@@ -12,6 +13,13 @@ class User extends Authenticatable
     use HasApiTokens, HasFactory, Notifiable;
 
     /**
+     * Tên bảng trong database
+     *
+     * @var string
+     */
+    protected $table = 'users';
+
+    /**
      * Các trường cho phép mass-assign.
      *
      * @var array<int,string>
@@ -20,9 +28,9 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'role',      // thêm nếu bạn muốn assign role ngay khi tạo
-        'phone',     // thêm nếu cần lưu số điện thoại
-        'address',   // thêm nếu cần lưu địa chỉ
+        'role',      // customer, seller, admin
+        'phone',     // số điện thoại
+        'address',   // địa chỉ
     ];
 
     /**
@@ -32,7 +40,6 @@ class User extends Authenticatable
      */
     protected $hidden = [
         'password',
-        // 'remember_token', // bỏ nếu không dùng cột này
     ];
 
     /**
@@ -44,4 +51,75 @@ class User extends Authenticatable
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
+
+    /**
+     * Giá trị mặc định cho các trường
+     *
+     * @var array
+     */
+    protected $attributes = [
+        'role' => 'customer', // Role mặc định khi đăng ký
+    ];
+
+    /**
+     * Kiểm tra xem user có phải là admin không
+     *
+     * @return bool
+     */
+    public function isAdmin()
+    {
+        return $this->role === 'admin';
+    }
+
+    /**
+     * Kiểm tra xem user có phải là seller không
+     *
+     * @return bool
+     */
+    public function isSeller()
+    {
+        return $this->role === 'seller';
+    }
+
+    /**
+     * Kiểm tra xem user có phải là customer không
+     *
+     * @return bool
+     */
+    public function isCustomer()
+    {
+        return $this->role === 'customer';
+    }
+
+    /**
+     * Relationship với bảng products (seller)
+     */
+    public function products()
+    {
+        return $this->hasMany(\App\Models\Product::class, 'seller_id');
+    }
+
+    /**
+     * Relationship với bảng orders (customer)
+     */
+    public function orders()
+    {
+        return $this->hasMany(\App\Models\Order::class, 'user_id');
+    }
+
+    /**
+     * Relationship với bảng shopping_carts
+     */
+    public function shoppingCart()
+    {
+        return $this->hasOne(\App\Models\ShoppingCart::class, 'user_id');
+    }
+
+    /**
+     * Relationship với bảng user_addresses
+     */
+    public function addresses()
+    {
+        return $this->hasMany(\App\Models\UserAddress::class, 'user_id');
+    }
 }

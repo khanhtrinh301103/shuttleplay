@@ -7,19 +7,19 @@ ShuttlePlay/
 │   │   │   ├── Handler.php
 │   │   ├── Http/                          
 │   │   │   ├── Controllers/                --> Chứa toàn bộ các API Controller
-│   │   │   │   ├── Api/
-│   │   │   │   │   ├── AuthController.php         --> Xử lý Login/Register → trả token
-│   │   │   │   │   ├── BffController.php          --> Xử lý Universal API (/api/bff)
-│   │   │   │   │   ├── CheckoutController.php     --> Xử lý luồng Checkout → tạo đơn hàng
-│   │   │   │   │   ├── Controller.php
-│   │   │   │   │   ├── MessageController.php      --> Xử lý Messaging → gửi/nhận message
-│   │   │   │   │   ├── UserController.php         --> Admin quản lý User (CRUD user)
+│   │   │   │   ├── AuthController.php         --> Xử lý Login/Register → trả token
+│   │   │   │   ├── BffController.php          --> Xử lý Universal API (/api/bff)
+│   │   │   │   ├── CheckoutController.php     --> Xử lý luồng Checkout → tạo đơn hàng
+│   │   │   │   ├── Controller.php
+│   │   │   │   ├── MessageController.php      --> Xử lý Messaging → gửi/nhận message
+│   │   │   │   ├── UserController.php         --> Admin quản lý User (CRUD user)
 │   │   │   ├── Middleware/   
 │   │   │   │   ├── Authenticate.php
 │   │   │   │   ├── EncryptCookies.php
 │   │   │   │   ├── PreventRequestsDuringMaintenance.php
 │   │   │   │   ├── RedirectIfAuthenticated.php              
 │   │   │   │   ├── RoleCheckMiddleware.php        --> Middleware kiểm tra quyền Role khi call /api/bff
+│   │   │   │   ├── RoleMiddleware.php
 │   │   │   │   ├── TrimStrings.php
 │   │   │   │   ├── TrustHosts.php
 │   │   │   │   ├── TrustProxies.php
@@ -107,6 +107,7 @@ ShuttlePlay/
 │   │   ├── logs
 │   ├── tests/                              --> Unit tests với PHPUnit
 │   │   │   ├── Feature/
+│   │   │   │   ├── AuthenticationTest.php
 │   │   │   │   ├── exampleTest.php
 │   │   │   ├── Unit/
 │   │   │   │   ├── exampleTest.php
