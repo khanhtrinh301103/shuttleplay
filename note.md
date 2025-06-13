@@ -39,7 +39,7 @@ php artisan key:generate
 # DB_DATABASE=<YOUR_SUPABASE_DB>
 # DB_USERNAME=<YOUR_SUPABASE_USER>
 # DB_PASSWORD=<YOUR_SUPABASE_PASSWORD>
-
+ 
 # 3.4 Chạy server
 php artisan serve --host=0.0.0.0 --port=8000
 # → API sẵn sàng tại http://localhost:8000/api/

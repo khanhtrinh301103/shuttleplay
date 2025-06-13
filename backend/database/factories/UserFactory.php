@@ -1,6 +1,9 @@
 <?php
 // File location: backend/database/factories/UserFactory.php
 
+// This file defines a factory for creating User model instances for testing purposes.
+// More specifically, it allows for the generation of user data with different roles (admin, seller, customer) and default values for fields like name, email, password, phone, and address.
+
 namespace Database\Factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;

@@ -50,14 +50,14 @@ class RegisterRequest extends FormRequest
                     ->uncompromised(), // Kiểm tra password không bị lộ
             ],
             'phone' => [
-                'nullable',
+                'nullable', // later change to required if needed
                 'string',
                 'regex:/^([0-9\s\-\+\(\)]*)$/',
                 'min:10',
                 'max:20'
             ],
             'address' => [
-                'nullable',
+                'nullable', // later change to required if needed
                 'string',
                 'max:500'
             ],
