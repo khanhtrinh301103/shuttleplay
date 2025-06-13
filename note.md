@@ -44,7 +44,10 @@ php artisan key:generate
 php artisan serve --host=0.0.0.0 --port=8000
 # → API sẵn sàng tại http://localhost:8000/api/
 ```
-
+php artisan cache:clear
+php artisan config:clear
+php artisan migrate
+php artisan test --filter=AuthenticationTest
 ---
 
 ### 4. Frontend (React + TS + Tailwind)

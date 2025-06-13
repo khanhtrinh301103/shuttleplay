@@ -1,3 +1,4 @@
+ShuttlePlay Project Structure (Updated with Product Management)
 ShuttlePlay/
 ├── backend/                                --> Laravel API server (Headless API Only)
 │   ├── app/
@@ -8,10 +9,10 @@ ShuttlePlay/
 │   │   ├── Http/                          
 │   │   │   ├── Controllers/                --> Chứa toàn bộ các API Controller
 │   │   │   │   ├── AuthController.php         --> Xử lý Login/Register → trả token
-│   │   │   │   ├── BffController.php          --> Xử lý Universal API (/api/bff)
 │   │   │   │   ├── CheckoutController.php     --> Xử lý luồng Checkout → tạo đơn hàng
 │   │   │   │   ├── Controller.php
 │   │   │   │   ├── MessageController.php      --> Xử lý Messaging → gửi/nhận message
+│   │   │   │   ├── ProductController.php      --> 🆕 Xử lý CRUD sản phẩm cho seller
 │   │   │   │   ├── UserController.php         --> Admin quản lý User (CRUD user)
 │   │   │   ├── Middleware/   
 │   │   │   │   ├── Authenticate.php
@@ -25,10 +26,17 @@ ShuttlePlay/
 │   │   │   │   ├── TrustProxies.php
 │   │   │   │   ├── ValidateSignature.php
 │   │   │   │   ├── VerifyCsrfToken.php
-│   │   │   ├── Requests/                   --> Chứa Form Validation cho các API (LoginRequest, CheckoutRequest, ...)
+│   │   │   ├── Requests/                   --> Chứa Form Validation cho các API
+│   │   │   │   ├── CreateProductRequest.php   --> 🆕 Validation cho tạo sản phẩm
+│   │   │   │   ├── LoginRequest.php
+│   │   │   │   ├── RegisterRequest.php
+│   │   │   │   ├── UpdateProductRequest.php   --> 🆕 Validation cho cập nhật sản phẩm
 │   │   │   ├── Resources/                  --> Chuẩn hóa API response (OrderResource, ProductResource, ...)
 │   │   │   ├── Kernel.php
-│   │   ├── Models/                         --> Chứa các model chính (User.php, Product.php, Order.php, Message.php, ...)
+│   │   ├── Models/                         --> Chứa các model chính
+│   │   │   ├── Category.php                   --> 🆕 Model cho danh mục sản phẩm
+│   │   │   ├── Product.php                    --> 🆕 Model cho sản phẩm
+│   │   │   ├── ProductImage.php               --> 🆕 Model cho hình ảnh sản phẩm
 │   │   │   ├── User.php
 │   │   ├── Providers/
 │   │   │   ├── AppServiceProvider.php
@@ -36,9 +44,10 @@ ShuttlePlay/
 │   │   │   ├── BroadcastServiceProvider.php
 │   │   │   ├── EventServiceProvider.php
 │   │   │   ├── RouteServiceProvider.php
-│   │   ├── Services/                       --> Tầng xử lý Business Logic riêng → tránh fat controller
+│   │   ├── Services/                       --> Tầng xử lý Business Logic riêng
 │   │   │   ├── OrderService.php                  --> Xử lý nghiệp vụ đặt hàng
 │   │   │   ├── PaymentService.php                --> Xử lý nghiệp vụ thanh toán (nếu có)
+│   │   │   ├── ProductService.php                --> 🆕 Xử lý nghiệp vụ sản phẩm (CRUD, images, etc.)
 │   ├── bootstrap/
 │   │   ├── cache/
 │   │   │   ├── .gitignore
@@ -70,10 +79,11 @@ ShuttlePlay/
 │   │   │   ├── 2019_08_19_000000_create_failed_jobs_table.php
 │   │   │   ├── 2019_12_14_000001_create_personal_access_tokens_table.php
 │   │   ├── seeders/                        --> Seeder để tạo sẵn dữ liệu mẫu
+│   │   │   ├── CategorySeeder.php             --> 🆕 Tạo dữ liệu mẫu categories
 │   │   │   ├── DatabaseSeeder.php
 │   │   ├── .gitignore
 │   ├── lang/en/
-│   ├── public/                             --> Public entry Laravel (chứa index.php + asset public nếu có)
+│   ├── public/                             --> Public entry Laravel
 │   │   ├──.htaccess
 │   │   ├── favicon.ico
 │   │   ├── index.php
@@ -87,9 +97,12 @@ ShuttlePlay/
 │   │   ├── views
 │   │   │   ├── welcome.blade.php
 │   ├── routes/
-│   │   ├── api.php                         --> Define các API route (Universal API + Transactional API)
+│   │   ├── api.php                         --> 🔄 Updated: Include product routes
+│   │   ├── auth.php                        --> Authentication routes
 │   │   ├── channels.php
 │   │   ├── console.php
+│   │   ├── products.php                    --> 🆕 Product management routes
+│   │   ├── public.php                      --> Public routes (if exists)
 │   │   ├── web.php
 │   ├── storage/
 │   │   ├── app/
@@ -108,7 +121,8 @@ ShuttlePlay/
 │   ├── tests/                              --> Unit tests với PHPUnit
 │   │   │   ├── Feature/
 │   │   │   │   ├── AuthenticationTest.php
-│   │   │   │   ├── exampleTest.php
+│   │   │   │   ├── ProductTest.php            --> 🆕 Test cases cho product functionality
+│   │   │   │   ├── ExampleTest.php
 │   │   │   ├── Unit/
 │   │   │   │   ├── exampleTest.php
 │   │   │   ├── CreatesApplication.php

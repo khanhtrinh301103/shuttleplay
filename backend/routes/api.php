@@ -19,6 +19,9 @@ require __DIR__.'/auth.php';
 // Include Public routes  
 require __DIR__.'/public.php';
 
+// Include Product routes
+require __DIR__.'/products.php';
+
 /*
 |--------------------------------------------------------------------------
 | Fallback Route
