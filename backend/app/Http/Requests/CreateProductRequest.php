@@ -58,22 +58,8 @@ class CreateProductRequest extends FormRequest
                 'sometimes',
                 'boolean'
             ],
-            // Xử lý images - có thể là array của URL hoặc file uploads
-            'images' => [
-                'nullable',
-                'array',
-                'max:10' // Tối đa 10 ảnh
-            ],
-            'images.*' => [
-                'string',
-                'max:255'
-            ],
-            // Đánh dấu ảnh nào là ảnh chính
-            'main_image_index' => [
-                'nullable',
-                'integer',
-                'min:0'
-            ]
+            // Note: Images are now handled separately via ProductImageController
+            // This keeps product creation and image upload as separate concerns
         ];
     }
 
@@ -103,14 +89,6 @@ class CreateProductRequest extends FormRequest
             
             'category_id.required' => 'Vui lòng chọn danh mục sản phẩm',
             'category_id.exists' => 'Danh mục sản phẩm không tồn tại',
-            
-            'images.array' => 'Danh sách hình ảnh không hợp lệ',
-            'images.max' => 'Tối đa 10 hình ảnh cho mỗi sản phẩm',
-            'images.*.string' => 'URL hình ảnh phải là chuỗi',
-            'images.*.max' => 'URL hình ảnh quá dài',
-            
-            'main_image_index.integer' => 'Chỉ số ảnh chính phải là số nguyên',
-            'main_image_index.min' => 'Chỉ số ảnh chính không hợp lệ',
         ];
     }
 
@@ -127,32 +105,6 @@ class CreateProductRequest extends FormRequest
             'price' => 'giá',
             'stock_qty' => 'số lượng tồn kho',
             'category_id' => 'danh mục',
-            'images' => 'hình ảnh',
-            'main_image_index' => 'ảnh chính'
         ];
-    }
-
-    /**
-     * Configure the validator instance.
-     *
-     * @param  \Illuminate\Validation\Validator  $validator
-     * @return void
-     */
-    public function withValidator($validator)
-    {
-        $validator->after(function ($validator) {
-            // Kiểm tra main_image_index có hợp lệ với số lượng images không
-            if ($this->has('images') && $this->has('main_image_index')) {
-                $images = $this->input('images', []);
-                $mainImageIndex = $this->input('main_image_index');
-                
-                if ($mainImageIndex >= count($images)) {
-                    $validator->errors()->add(
-                        'main_image_index', 
-                        'Chỉ số ảnh chính vượt quá số lượng ảnh có sẵn'
-                    );
-                }
-            }
-        });
     }
 }

@@ -5,12 +5,20 @@ namespace App\Services;
 
 use App\Models\Product;
 use App\Models\ProductImage;
+use App\Services\CloudinaryService;
 use Illuminate\Support\Facades\DB;
 
 class ProductService
 {
+    protected $cloudinaryService;
+
+    public function __construct(CloudinaryService $cloudinaryService)
+    {
+        $this->cloudinaryService = $cloudinaryService;
+    }
+
     /**
-     * Tạo sản phẩm mới với images
+     * Tạo sản phẩm mới (không bao gồm images - sẽ upload riêng)
      *
      * @param array $data
      * @param int $sellerId
@@ -29,11 +37,6 @@ class ProductService
                 'seller_id' => $sellerId,
                 'published' => $data['published'] ?? false,
             ]);
-
-            // Xử lý images nếu có
-            if (isset($data['images']) && is_array($data['images']) && count($data['images']) > 0) {
-                $this->attachImages($product, $data['images'], $data['main_image_index'] ?? 0);
-            }
 
             return $product;
         });
@@ -78,17 +81,6 @@ class ProductService
 
             $product->update($updateData);
 
-            // Xử lý images nếu có trong data update
-            if (isset($data['images']) && is_array($data['images'])) {
-                // Xóa tất cả images cũ
-                $product->images()->delete();
-                
-                // Thêm images mới
-                if (count($data['images']) > 0) {
-                    $this->attachImages($product, $data['images'], $data['main_image_index'] ?? 0);
-                }
-            }
-
             return $product->fresh();
         });
     }
@@ -102,7 +94,28 @@ class ProductService
     public function deleteProduct(Product $product): bool
     {
         return DB::transaction(function () use ($product) {
-            // Xóa images trước (vì có foreign key constraint)
+            // Lấy danh sách images để xóa từ Cloudinary
+            $images = $product->images()->get();
+            $publicIds = [];
+
+            foreach ($images as $image) {
+                $publicId = $this->cloudinaryService->extractPublicId($image->image_url);
+                if ($publicId) {
+                    $publicIds[] = $publicId;
+                }
+            }
+
+            // Xóa images từ Cloudinary
+            if (!empty($publicIds)) {
+                try {
+                    $this->cloudinaryService->deleteMultipleImages($publicIds);
+                } catch (\Exception $e) {
+                    // Log error but continue with database deletion
+                    \Log::warning('Failed to delete some images from Cloudinary: ' . $e->getMessage());
+                }
+            }
+
+            // Xóa images từ database
             $product->images()->delete();
             
             // Xóa sản phẩm
@@ -111,52 +124,38 @@ class ProductService
     }
 
     /**
-     * Attach images cho sản phẩm
+     * Thêm một image mới cho sản phẩm từ uploaded file
      *
      * @param Product $product
-     * @param array $imageUrls
-     * @param int $mainImageIndex
-     * @return void
+     * @param \Illuminate\Http\UploadedFile $file
+     * @param bool $isMain
+     * @return ProductImage
      */
-    private function attachImages(Product $product, array $imageUrls, int $mainImageIndex = 0): void
+    public function addImageFromFile(Product $product, $file, bool $isMain = false): ProductImage
     {
-        foreach ($imageUrls as $index => $imageUrl) {
-            ProductImage::create([
-                'product_id' => $product->id,
-                'image_url' => $imageUrl,
-                'is_main' => $index === $mainImageIndex
-            ]);
-        }
-    }
+        return DB::transaction(function () use ($product, $file, $isMain) {
+            // Upload to Cloudinary
+            $uploadResult = $this->cloudinaryService->uploadImage($file, $product->id);
 
-    /**
-     * Cập nhật ảnh chính cho sản phẩm
-     *
-     * @param Product $product
-     * @param int $imageId
-     * @return bool
-     */
-    public function setMainImage(Product $product, int $imageId): bool
-    {
-        return DB::transaction(function () use ($product, $imageId) {
-            // Kiểm tra image có thuộc về sản phẩm này không
-            $image = $product->images()->find($imageId);
-            if (!$image) {
-                throw new \Exception('Image không thuộc về sản phẩm này');
+            if (!$uploadResult['success']) {
+                throw new \Exception('Failed to upload image to Cloudinary');
             }
 
-            // Bỏ is_main của tất cả images khác
-            $product->images()->update(['is_main' => false]);
-            
-            // Set image này là main
-            $image->update(['is_main' => true]);
-            
-            return true;
+            // Nếu set làm main image, thì bỏ main của các image khác
+            if ($isMain) {
+                $product->images()->update(['is_main' => false]);
+            }
+
+            return ProductImage::create([
+                'product_id' => $product->id,
+                'image_url' => $uploadResult['secure_url'],
+                'is_main' => $isMain
+            ]);
         });
     }
 
     /**
-     * Thêm một image mới cho sản phẩm
+     * Thêm image từ URL (legacy method - giữ để backward compatibility)
      *
      * @param Product $product
      * @param string $imageUrl
@@ -188,13 +187,63 @@ class ProductService
      */
     public function removeImage(Product $product, int $imageId): bool
     {
-        $image = $product->images()->find($imageId);
-        
-        if (!$image) {
-            throw new \Exception('Image không tồn tại hoặc không thuộc về sản phẩm này');
-        }
+        return DB::transaction(function () use ($product, $imageId) {
+            $image = $product->images()->find($imageId);
+            
+            if (!$image) {
+                throw new \Exception('Image không tồn tại hoặc không thuộc về sản phẩm này');
+            }
 
-        return $image->delete();
+            // Delete from Cloudinary
+            $publicId = $this->cloudinaryService->extractPublicId($image->image_url);
+            if ($publicId) {
+                try {
+                    $this->cloudinaryService->deleteImage($publicId);
+                } catch (\Exception $e) {
+                    \Log::warning('Failed to delete image from Cloudinary: ' . $e->getMessage());
+                }
+            }
+
+            // Delete from database
+            $wasMain = $image->is_main;
+            $result = $image->delete();
+
+            // If deleted image was main, set another as main
+            if ($wasMain) {
+                $newMainImage = $product->images()->first();
+                if ($newMainImage) {
+                    $newMainImage->update(['is_main' => true]);
+                }
+            }
+
+            return $result;
+        });
+    }
+
+    /**
+     * Cập nhật ảnh chính cho sản phẩm
+     *
+     * @param Product $product
+     * @param int $imageId
+     * @return bool
+     */
+    public function setMainImage(Product $product, int $imageId): bool
+    {
+        return DB::transaction(function () use ($product, $imageId) {
+            // Kiểm tra image có thuộc về sản phẩm này không
+            $image = $product->images()->find($imageId);
+            if (!$image) {
+                throw new \Exception('Image không thuộc về sản phẩm này');
+            }
+
+            // Bỏ is_main của tất cả images khác
+            $product->images()->update(['is_main' => false]);
+            
+            // Set image này là main
+            $image->update(['is_main' => true]);
+            
+            return true;
+        });
     }
 
     /**
@@ -209,12 +258,104 @@ class ProductService
         $publishedProducts = Product::where('seller_id', $sellerId)->where('published', true)->count();
         $unpublishedProducts = $totalProducts - $publishedProducts;
         $totalValue = Product::where('seller_id', $sellerId)->sum(DB::raw('price * stock_qty'));
+        $totalImages = ProductImage::whereHas('product', function($query) use ($sellerId) {
+            $query->where('seller_id', $sellerId);
+        })->count();
 
         return [
             'total_products' => $totalProducts,
             'published_products' => $publishedProducts,
             'unpublished_products' => $unpublishedProducts,
-            'total_inventory_value' => $totalValue
+            'total_inventory_value' => $totalValue,
+            'total_images' => $totalImages
         ];
+    }
+
+    /**
+     * Bulk delete products with their images
+     *
+     * @param array $productIds
+     * @param int $sellerId
+     * @return array
+     */
+    public function bulkDeleteProducts(array $productIds, int $sellerId): array
+    {
+        $deletedCount = 0;
+        $errors = [];
+
+        foreach ($productIds as $productId) {
+            try {
+                $product = Product::where('id', $productId)
+                    ->where('seller_id', $sellerId)
+                    ->first();
+
+                if (!$product) {
+                    $errors[] = "Product ID {$productId} not found or not owned by seller";
+                    continue;
+                }
+
+                $this->deleteProduct($product);
+                $deletedCount++;
+
+            } catch (\Exception $e) {
+                $errors[] = "Failed to delete product ID {$productId}: " . $e->getMessage();
+            }
+        }
+
+        return [
+            'success' => $deletedCount > 0,
+            'deleted_count' => $deletedCount,
+            'total_requested' => count($productIds),
+            'errors' => $errors
+        ];
+    }
+
+    /**
+     * Search products with filters
+     *
+     * @param array $filters
+     * @param int $sellerId
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function searchSellerProducts(array $filters, int $sellerId)
+    {
+        $query = Product::with(['category', 'images'])
+            ->where('seller_id', $sellerId);
+
+        // Apply filters
+        if (isset($filters['name']) && !empty($filters['name'])) {
+            $query->where('name', 'ILIKE', '%' . $filters['name'] . '%');
+        }
+
+        if (isset($filters['category_id']) && !empty($filters['category_id'])) {
+            $query->where('category_id', $filters['category_id']);
+        }
+
+        if (isset($filters['published']) && $filters['published'] !== null) {
+            $query->where('published', $filters['published']);
+        }
+
+        if (isset($filters['min_price']) && !empty($filters['min_price'])) {
+            $query->where('price', '>=', $filters['min_price']);
+        }
+
+        if (isset($filters['max_price']) && !empty($filters['max_price'])) {
+            $query->where('price', '<=', $filters['max_price']);
+        }
+
+        if (isset($filters['in_stock']) && $filters['in_stock']) {
+            $query->where('stock_qty', '>', 0);
+        }
+
+        // Sorting
+        $sortBy = $filters['sort_by'] ?? 'created_at';
+        $sortOrder = $filters['sort_order'] ?? 'desc';
+        
+        $allowedSortFields = ['created_at', 'updated_at', 'name', 'price', 'stock_qty'];
+        if (in_array($sortBy, $allowedSortFields)) {
+            $query->orderBy($sortBy, $sortOrder);
+        }
+
+        return $query->get();
     }
 }
