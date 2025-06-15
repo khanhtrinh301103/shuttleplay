@@ -3,39 +3,39 @@
 
 namespace App\Services;
 
-use Cloudinary\Configuration\Configuration;
-use Cloudinary\Api\Upload\UploadApi;
-use Cloudinary\Api\Admin\AdminApi;
-use Cloudinary\Transformation\Resize;
-use Cloudinary\Transformation\Quality;
-use Cloudinary\Transformation\Format;
 use Exception;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
+use GuzzleHttp\Client;
+use GuzzleHttp\Exception\RequestException;
 
 class CloudinaryService
 {
-    protected $uploadApi;
-    protected $adminApi;
+    protected $httpClient;
     protected $config;
+    protected $cloudName;
+    protected $apiKey;
+    protected $apiSecret;
+    protected $baseUrl;
 
     public function __construct()
     {
-        // Configure Cloudinary
-        Configuration::instance([
-            'cloud' => [
-                'cloud_name' => config('cloudinary.cloud_name'),
-                'api_key' => config('cloudinary.api_key'),
-                'api_secret' => config('cloudinary.api_secret'),
-            ],
-            'url' => [
-                'secure' => config('cloudinary.secure', true)
+        $this->config = config('cloudinary');
+        $this->cloudName = config('cloudinary.cloud_name');
+        $this->apiKey = config('cloudinary.api_key');
+        $this->apiSecret = config('cloudinary.api_secret');
+        $this->baseUrl = "https://api.cloudinary.com/v1_1/{$this->cloudName}";
+
+        // Create HTTP client with SSL disabled for development
+        $this->httpClient = new Client([
+            'verify' => false, // Disable SSL verification completely
+            'timeout' => 30,
+            'curl' => [
+                CURLOPT_SSL_VERIFYPEER => false,
+                CURLOPT_SSL_VERIFYHOST => false,
+                CURLOPT_SSLVERSION => CURL_SSLVERSION_TLSv1_2,
             ]
         ]);
-
-        $this->uploadApi = new UploadApi();
-        $this->adminApi = new AdminApi();
-        $this->config = config('cloudinary');
     }
 
     /**
@@ -56,21 +56,33 @@ class CloudinaryService
             // Generate unique public ID
             $publicId = $customPublicId ?? $this->generatePublicId($productId);
 
-            // Upload options
-            $options = [
-                'folder' => $this->config['folder'],
-                'public_id' => $publicId,
-                'overwrite' => $this->config['overwrite'],
-                'unique_filename' => $this->config['unique_filename'],
-                'resource_type' => 'image',
-                'quality' => 'auto',
-                'fetch_format' => 'auto',
-                'allowed_formats' => $this->config['allowed_formats'],
-                'max_bytes' => $this->config['max_file_size']
+            // Prepare form data using upload preset (simplest approach)
+            $formData = [
+                [
+                    'name' => 'file',
+                    'contents' => fopen($file->getRealPath(), 'r'),
+                    'filename' => $file->getClientOriginalName()
+                ],
+                [
+                    'name' => 'upload_preset',
+                    'contents' => config('cloudinary.upload_preset', 'shuttleplay_products')
+                ],
+                [
+                    'name' => 'public_id',
+                    'contents' => $publicId
+                ],
+                [
+                    'name' => 'folder',
+                    'contents' => $this->config['folder']
+                ]
             ];
 
-            // Upload to Cloudinary
-            $result = $this->uploadApi->upload($file->getRealPath(), $options);
+            // Upload to Cloudinary using upload preset (no auth needed)
+            $response = $this->httpClient->post("{$this->baseUrl}/image/upload", [
+                'multipart' => $formData
+            ]);
+
+            $result = json_decode($response->getBody(), true);
 
             return [
                 'success' => true,
@@ -85,6 +97,9 @@ class CloudinaryService
                 'created_at' => $result['created_at']
             ];
 
+        } catch (RequestException $e) {
+            $errorBody = $e->hasResponse() ? $e->getResponse()->getBody() : 'Unknown error';
+            throw new Exception('Failed to upload image: ' . $errorBody);
         } catch (Exception $e) {
             throw new Exception('Failed to upload image: ' . $e->getMessage());
         }
@@ -134,7 +149,14 @@ class CloudinaryService
     public function deleteImage(string $publicId): array
     {
         try {
-            $result = $this->uploadApi->destroy($publicId);
+            $response = $this->httpClient->post("{$this->baseUrl}/image/destroy", [
+                'auth' => [$this->apiKey, $this->apiSecret],
+                'form_params' => [
+                    'public_id' => $publicId
+                ]
+            ]);
+
+            $result = json_decode($response->getBody(), true);
 
             return [
                 'success' => $result['result'] === 'ok',
@@ -142,8 +164,9 @@ class CloudinaryService
                 'public_id' => $publicId
             ];
 
-        } catch (Exception $e) {
-            throw new Exception('Failed to delete image: ' . $e->getMessage());
+        } catch (RequestException $e) {
+            $errorBody = $e->hasResponse() ? $e->getResponse()->getBody() : 'Unknown error';
+            throw new Exception('Failed to delete image: ' . $errorBody);
         }
     }
 
@@ -189,17 +212,41 @@ class CloudinaryService
     public function getTransformedUrl(string $publicId, string $transformation = 'medium'): string
     {
         $transformations = $this->config['transformations'][$transformation] ?? $this->config['transformations']['medium'];
+        
+        // Build Cloudinary URL manually
+        $baseUrl = "https://res.cloudinary.com/{$this->cloudName}/image/upload";
+        
+        // Build transformation string
+        $transformationParams = [];
+        
+        if (isset($transformations['width'])) {
+            $transformationParams[] = "w_{$transformations['width']}";
+        }
+        
+        if (isset($transformations['height'])) {
+            $transformationParams[] = "h_{$transformations['height']}";
+        }
+        
+        if (isset($transformations['crop'])) {
+            $transformationParams[] = "c_{$transformations['crop']}";
+        }
+        
+        if (isset($transformations['quality'])) {
+            $transformationParams[] = "q_{$transformations['quality']}";
+        }
+        
+        if (isset($transformations['fetch_format'])) {
+            $transformationParams[] = "f_{$transformations['fetch_format']}";
+        }
 
-        $url = cloudinary_url($publicId, [
-            'width' => $transformations['width'],
-            'height' => $transformations['height'],
-            'crop' => $transformations['crop'],
-            'quality' => $transformations['quality'],
-            'fetch_format' => $transformations['fetch_format'],
-            'secure' => true
-        ]);
-
-        return $url;
+        $transformationString = implode(',', $transformationParams);
+        
+        // Construct final URL
+        if (!empty($transformationString)) {
+            return "{$baseUrl}/{$transformationString}/{$publicId}";
+        }
+        
+        return "{$baseUrl}/{$publicId}";
     }
 
     /**
@@ -210,22 +257,57 @@ class CloudinaryService
      */
     public function extractPublicId(string $url): ?string
     {
-        // Pattern to match Cloudinary URLs and extract public ID
-        $pattern = '/\/(?:v\d+\/)?(?:.*\/)?([^\/]+)\.[a-zA-Z]{3,4}$/';
-        
-        if (preg_match($pattern, $url, $matches)) {
-            // Remove folder prefix if exists
-            $publicIdWithFolder = $matches[1];
-            $folder = $this->config['folder'];
-            
-            if (strpos($url, $folder) !== false) {
-                return $folder . '/' . $publicIdWithFolder;
-            }
-            
-            return $publicIdWithFolder;
+        // Check if it's a valid Cloudinary URL
+        if (!str_contains($url, 'cloudinary.com')) {
+            return null;
         }
 
-        return null;
+        // Remove base URL part
+        $pattern = '/.*\/image\/upload\//';
+        $remaining = preg_replace($pattern, '', $url);
+        
+        if (!$remaining) {
+            return null;
+        }
+        
+        // Split by '/' to handle version and transformations
+        $parts = explode('/', $remaining);
+        
+        // The last part should contain the public_id with extension
+        $lastPart = end($parts);
+        
+        // Remove file extension
+        $publicId = preg_replace('/\.[^.]+$/', '', $lastPart);
+        
+        // If we have a folder structure, include the folder path
+        if (count($parts) > 1) {
+            // Check if first part is version (starts with 'v' followed by numbers)
+            $firstPart = $parts[0];
+            if (preg_match('/^v\d+$/', $firstPart)) {
+                array_shift($parts); // Remove version
+            }
+            
+            // Find where transformations end and public_id path begins
+            $publicIdParts = [];
+            
+            foreach ($parts as $part) {
+                // If part contains transformation parameters (w_, h_, c_, q_, f_, etc.)
+                if (preg_match('/^[a-z]_/', $part) || str_contains($part, ',')) {
+                    continue;
+                }
+                
+                $publicIdParts[] = $part;
+            }
+            
+            // Remove extension from last part
+            if (!empty($publicIdParts)) {
+                $lastIndex = count($publicIdParts) - 1;
+                $publicIdParts[$lastIndex] = preg_replace('/\.[^.]+$/', '', $publicIdParts[$lastIndex]);
+                return implode('/', $publicIdParts);
+            }
+        }
+        
+        return $publicId;
     }
 
     /**
@@ -280,7 +362,11 @@ class CloudinaryService
     public function getStorageInfo(): array
     {
         try {
-            $usage = $this->adminApi->usage();
+            $response = $this->httpClient->get("{$this->baseUrl}/usage", [
+                'auth' => [$this->apiKey, $this->apiSecret]
+            ]);
+
+            $usage = json_decode($response->getBody(), true);
             
             return [
                 'success' => true,
@@ -296,5 +382,66 @@ class CloudinaryService
                 'error' => $e->getMessage()
             ];
         }
+    }
+
+    /**
+     * Get direct Cloudinary URL without transformations
+     *
+     * @param string $publicId
+     * @return string
+     */
+    public function getDirectUrl(string $publicId): string
+    {
+        return "https://res.cloudinary.com/{$this->cloudName}/image/upload/{$publicId}";
+    }
+
+    /**
+     * Build custom transformation URL
+     *
+     * @param string $publicId
+     * @param array $customTransformations
+     * @return string
+     */
+    public function getCustomTransformedUrl(string $publicId, array $customTransformations = []): string
+    {
+        $baseUrl = "https://res.cloudinary.com/{$this->cloudName}/image/upload";
+        
+        if (empty($customTransformations)) {
+            return "{$baseUrl}/{$publicId}";
+        }
+        
+        $transformationParams = [];
+        
+        foreach ($customTransformations as $key => $value) {
+            switch ($key) {
+                case 'width':
+                    $transformationParams[] = "w_{$value}";
+                    break;
+                case 'height':
+                    $transformationParams[] = "h_{$value}";
+                    break;
+                case 'crop':
+                    $transformationParams[] = "c_{$value}";
+                    break;
+                case 'quality':
+                    $transformationParams[] = "q_{$value}";
+                    break;
+                case 'format':
+                    $transformationParams[] = "f_{$value}";
+                    break;
+                case 'effect':
+                    $transformationParams[] = "e_{$value}";
+                    break;
+                case 'angle':
+                    $transformationParams[] = "a_{$value}";
+                    break;
+                case 'radius':
+                    $transformationParams[] = "r_{$value}";
+                    break;
+            }
+        }
+        
+        $transformationString = implode(',', $transformationParams);
+        return "{$baseUrl}/{$transformationString}/{$publicId}";
     }
 }
