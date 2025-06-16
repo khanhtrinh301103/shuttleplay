@@ -13,6 +13,7 @@ ShuttlePlay/
 │   │   │   │   ├── Controller.php
 │   │   │   │   ├── MessageController.php      --> Xử lý Messaging → gửi/nhận message
 │   │   │   │   ├── ProductController.php      --> 🆕 Xử lý CRUD sản phẩm cho seller
+│   │   │   │   ├── 
 │   │   │   │   ├── UserController.php         --> Admin quản lý User (CRUD user)
 │   │   │   ├── Middleware/   
 │   │   │   │   ├── Authenticate.php
@@ -28,6 +29,7 @@ ShuttlePlay/
 │   │   │   │   ├── VerifyCsrfToken.php
 │   │   │   ├── Requests/                   --> Chứa Form Validation cho các API
 │   │   │   │   ├── CreateProductRequest.php   --> 🆕 Validation cho tạo sản phẩm
+│   │   │   │   ├── ImageUploadRequest.php
 │   │   │   │   ├── LoginRequest.php
 │   │   │   │   ├── RegisterRequest.php
 │   │   │   │   ├── UpdateProductRequest.php   --> 🆕 Validation cho cập nhật sản phẩm
@@ -45,6 +47,7 @@ ShuttlePlay/
 │   │   │   ├── EventServiceProvider.php
 │   │   │   ├── RouteServiceProvider.php
 │   │   ├── Services/                       --> Tầng xử lý Business Logic riêng
+│   │   │   ├── CloudinaryService.php
 │   │   │   ├── OrderService.php                  --> Xử lý nghiệp vụ đặt hàng
 │   │   │   ├── PaymentService.php                --> Xử lý nghiệp vụ thanh toán (nếu có)
 │   │   │   ├── ProductService.php                --> 🆕 Xử lý nghiệp vụ sản phẩm (CRUD, images, etc.)
@@ -59,6 +62,7 @@ ShuttlePlay/
 │   │   ├── auth.php
 │   │   ├── broadcasting.php
 │   │   ├── cache.php
+│   │   ├── cloudinary.php
 │   │   ├── cors.php
 │   │   ├── database.php
 │   │   ├── filesystems.php
@@ -101,6 +105,7 @@ ShuttlePlay/
 │   │   ├── auth.php                        --> Authentication routes
 │   │   ├── channels.php
 │   │   ├── console.php
+│   │   ├── images.php
 │   │   ├── products.php                    --> 🆕 Product management routes
 │   │   ├── public.php                      --> Public routes (if exists)
 │   │   ├── web.php
@@ -122,6 +127,7 @@ ShuttlePlay/
 │   │   │   ├── Feature/
 │   │   │   │   ├── AuthenticationTest.php
 │   │   │   │   ├── ProductTest.php            --> 🆕 Test cases cho product functionality
+│   │   │   │   ├── ProductImageTest.php
 │   │   │   │   ├── ExampleTest.php
 │   │   │   ├── Unit/
 │   │   │   │   ├── exampleTest.php
