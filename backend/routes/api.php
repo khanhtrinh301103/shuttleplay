@@ -19,8 +19,11 @@ require __DIR__.'/auth.php';
 // Include Public routes  
 require __DIR__.'/public.php';
 
-// Include Product routes
+// Include Product routes (SELLER)
 require __DIR__.'/products.php';
+
+// Include Customer Product routes (CUSTOMER) - 🆕 NEW
+require __DIR__.'/customer-products.php';
 
 // Include Image routes
 require __DIR__.'/images.php';
