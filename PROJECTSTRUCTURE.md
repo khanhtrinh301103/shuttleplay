@@ -11,9 +11,10 @@ ShuttlePlay/
 │   │   │   │   ├── AuthController.php         --> Xử lý Login/Register → trả token
 │   │   │   │   ├── CheckoutController.php     --> Xử lý luồng Checkout → tạo đơn hàng
 │   │   │   │   ├── Controller.php
+│   │   │   │   ├── CustomerProductController.php
 │   │   │   │   ├── MessageController.php      --> Xử lý Messaging → gửi/nhận message
 │   │   │   │   ├── ProductController.php      --> 🆕 Xử lý CRUD sản phẩm cho seller
-│   │   │   │   ├── 
+│   │   │   │   ├── ProductImageController.php
 │   │   │   │   ├── UserController.php         --> Admin quản lý User (CRUD user)
 │   │   │   ├── Middleware/   
 │   │   │   │   ├── Authenticate.php
@@ -33,6 +34,7 @@ ShuttlePlay/
 │   │   │   │   ├── RegisterRequest.php
 │   │   │   │   ├── UpdateProductRequest.php   --> 🆕 Validation cho cập nhật sản phẩm
 │   │   │   ├── Resources/                  --> Chuẩn hóa API response (OrderResource, ProductResource, ...)
+│   │   │   │   ├── CustomerProductResource.php
 │   │   │   ├── Kernel.php
 │   │   ├── Models/                         --> Chứa các model chính
 │   │   │   ├── Category.php                   --> 🆕 Model cho danh mục sản phẩm
@@ -104,6 +106,7 @@ ShuttlePlay/
 │   │   ├── auth.php                        --> Authentication routes
 │   │   ├── channels.php
 │   │   ├── console.php
+│   │   ├── customer-products.php
 │   │   ├── images.php
 │   │   ├── products.php                    --> 🆕 Product management routes
 │   │   ├── public.php                      --> Public routes (if exists)
