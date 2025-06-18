@@ -19,10 +19,13 @@ require __DIR__.'/auth.php';
 // Include Public routes  
 require __DIR__.'/public.php';
 
-// Include Product routes
+// Include Customer Product routes (Public API cho customer xem sản phẩm)
+require __DIR__.'/customer-products.php';
+
+// Include Product routes (Protected API cho seller quản lý sản phẩm)
 require __DIR__.'/products.php';
 
-// Include Image routes
+// Include Image routes (Protected API cho seller quản lý hình ảnh)
 require __DIR__.'/images.php';
 
 /*

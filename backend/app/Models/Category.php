@@ -54,10 +54,13 @@ class Category extends Model
 
     /**
      * Get the published products for the category.
+     * ⭐ THIS METHOD WAS MISSING - CAUSING THE ERROR ⭐
      */
     public function publishedProducts()
     {
-        return $this->hasMany(Product::class)->where('published', true);
+        return $this->hasMany(Product::class)
+            ->where('published', true)
+            ->where('stock_qty', '>', 0);
     }
 
     /**
