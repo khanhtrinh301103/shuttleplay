@@ -21,6 +21,7 @@ ShuttlePlay/
 │   │   │   │   ├── EncryptCookies.php
 │   │   │   │   ├── PreventRequestsDuringMaintenance.php
 │   │   │   │   ├── RedirectIfAuthenticated.php              
+│   │   │   │   ├── RoleCheckMiddleware.php        --> Middleware kiểm tra quyền Role khi call /api/bff
 │   │   │   │   ├── RoleMiddleware.php
 │   │   │   │   ├── TrimStrings.php
 │   │   │   │   ├── TrustHosts.php
