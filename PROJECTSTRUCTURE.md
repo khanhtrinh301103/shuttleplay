@@ -9,6 +9,7 @@ ShuttlePlay/
 │   │   ├── Http/                          
 │   │   │   ├── Controllers/                --> Chứa toàn bộ các API Controller
 │   │   │   │   ├── AuthController.php         --> Xử lý Login/Register → trả token
+│   │   │   │   ├── CategoryController.php
 │   │   │   │   ├── CheckoutController.php     --> Xử lý luồng Checkout → tạo đơn hàng
 │   │   │   │   ├── Controller.php
 │   │   │   │   ├── CustomerProductController.php
@@ -40,6 +41,7 @@ ShuttlePlay/
 │   │   │   ├── Category.php                   --> 🆕 Model cho danh mục sản phẩm
 │   │   │   ├── Product.php                    --> 🆕 Model cho sản phẩm
 │   │   │   ├── ProductImage.php               --> 🆕 Model cho hình ảnh sản phẩm
+│   │   │   ├── Review.php
 │   │   │   ├── User.php
 │   │   ├── Providers/
 │   │   │   ├── AppServiceProvider.php
@@ -128,9 +130,10 @@ ShuttlePlay/
 │   ├── tests/                              --> Unit tests với PHPUnit
 │   │   │   ├── Feature/
 │   │   │   │   ├── AuthenticationTest.php
+│   │   │   │   ├── CustomerFeaturesTest.php
+│   │   │   │   ├── ExampleTest.php
 │   │   │   │   ├── ProductTest.php            --> 🆕 Test cases cho product functionality
 │   │   │   │   ├── ProductImageTest.php
-│   │   │   │   ├── ExampleTest.php
 │   │   │   ├── Unit/
 │   │   │   │   ├── exampleTest.php
 │   │   │   ├── CreatesApplication.php

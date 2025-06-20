@@ -59,19 +59,20 @@ Route::get('/version', function() {
 
 /*
 |--------------------------------------------------------------------------
-| Category Routes (New - Added for Customer Features)
+| Category Routes (Fixed Order - Specific routes BEFORE dynamic routes)
 |--------------------------------------------------------------------------
 */
 
 // Lấy danh sách tất cả categories
 Route::get('/categories', [CategoryController::class, 'index']);
 
-// Lấy chi tiết category theo slug
-Route::get('/categories/{slug}', [CategoryController::class, 'show'])
-    ->where('slug', '[a-z0-9\-]+');
-
+// ⭐ IMPORTANT: Specific routes MUST come BEFORE dynamic routes
 // Lấy danh sách categories có sản phẩm (for navigation)
 Route::get('/categories/active', [CategoryController::class, 'getActiveCategories']);
+
+// Lấy chi tiết category theo slug (MUST be AFTER /categories/active)
+Route::get('/categories/{slug}', [CategoryController::class, 'show'])
+    ->where('slug', '[a-z0-9\-]+');
 
 /*
 |--------------------------------------------------------------------------
@@ -104,50 +105,4 @@ Route::get('/status', function () {
             'system' => '/api/health, /api/db-test, /api/version'
         ]
     ]);
-
-    // Thêm route debug này vào cuối file public.php (TEMPORARY)
-
-    Route::get('/debug-categories', function() {
-        try {
-            // 1. Check total categories
-            $totalCategories = \App\Models\Category::count();
-            
-            // 2. Check total published products
-            $totalPublishedProducts = \App\Models\Product::where('published', true)->where('stock_qty', '>', 0)->count();
-            
-            // 3. Check categories with products (manual query)
-            $categoriesWithProducts = \App\Models\Category::whereHas('products', function($query) {
-                $query->where('published', true)->where('stock_qty', '>', 0);
-            })->with(['products' => function($query) {
-                $query->where('published', true)->where('stock_qty', '>', 0);
-            }])->get();
-            
-            // 4. Check each category's products count
-            $categoryDetails = \App\Models\Category::all()->map(function($category) {
-                return [
-                    'id' => $category->id,
-                    'name' => $category->name,
-                    'slug' => $category->slug,
-                    'total_products' => $category->products()->count(),
-                    'published_products' => $category->products()->where('published', true)->where('stock_qty', '>', 0)->count(),
-                ];
-            });
-
-            return response()->json([
-                'debug_info' => [
-                    'total_categories' => $totalCategories,
-                    'total_published_products' => $totalPublishedProducts,
-                    'categories_with_products_count' => $categoriesWithProducts->count(),
-                    'categories_with_products' => $categoriesWithProducts,
-                    'category_details' => $categoryDetails,
-                ]
-            ]);
-            
-        } catch (\Exception $e) {
-            return response()->json([
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ], 500);
-        }
-    });
 });
