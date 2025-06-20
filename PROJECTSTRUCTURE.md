@@ -134,6 +134,7 @@ ShuttlePlay/
 │   │   │   │   ├── ExampleTest.php
 │   │   │   │   ├── ProductTest.php            --> 🆕 Test cases cho product functionality
 │   │   │   │   ├── ProductImageTest.php
+│   │   │   │   ├── SeparatedImageApiTest.php
 │   │   │   ├── Unit/
 │   │   │   │   ├── exampleTest.php
 │   │   │   ├── CreatesApplication.php

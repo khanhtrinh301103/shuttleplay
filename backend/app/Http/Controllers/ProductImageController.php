@@ -22,13 +22,13 @@ class ProductImageController extends Controller
     }
 
     /**
-     * Upload images for a product
+     * 🆕 Upload MAIN image for a product (single image only)
      *
      * @param Request $request
      * @param int $productId
      * @return \Illuminate\Http\JsonResponse
      */
-    public function uploadImages(Request $request, int $productId)
+    public function uploadMainImage(Request $request, int $productId)
     {
         try {
             $user = Auth::user();
@@ -42,72 +42,185 @@ class ProductImageController extends Controller
                 ], 403);
             }
 
-            // Validate request
+            // Validate request - ONLY 1 main image allowed
             $request->validate([
-                'images' => [
-                    'required',
-                    'array',
-                    'min:1',
-                    'max:' . config('cloudinary.max_files_per_product', 10)
-                ],
-                'images.*' => [
+                'main_image' => [
                     'required',
                     'image',
                     'mimes:jpeg,jpg,png,webp,gif',
                     'max:' . (config('cloudinary.max_file_size', 10485760) / 1024) // Convert to KB
-                ],
-                'main_image_index' => [
-                    'sometimes',
-                    'integer',
-                    'min:0'
                 ]
             ], [
-                'images.required' => 'Vui lòng chọn ít nhất một ảnh',
-                'images.array' => 'Dữ liệu ảnh không hợp lệ',
-                'images.min' => 'Vui lòng chọn ít nhất một ảnh',
-                'images.max' => 'Tối đa ' . config('cloudinary.max_files_per_product', 10) . ' ảnh cho mỗi sản phẩm',
-                'images.*.required' => 'File ảnh không được để trống',
-                'images.*.image' => 'File phải là ảnh',
-                'images.*.mimes' => 'Ảnh phải có định dạng: jpeg, jpg, png, webp, gif',
-                'images.*.max' => 'Kích thước ảnh không được vượt quá ' . round(config('cloudinary.max_file_size', 10485760) / 1024 / 1024, 2) . 'MB',
+                'main_image.required' => 'Vui lòng chọn ảnh chính',
+                'main_image.image' => 'File phải là ảnh',
+                'main_image.mimes' => 'Ảnh phải có định dạng: jpeg, jpg, png, webp, gif',
+                'main_image.max' => 'Kích thước ảnh không được vượt quá ' . round(config('cloudinary.max_file_size', 10485760) / 1024 / 1024, 2) . 'MB',
             ]);
 
-            // Check current image count
-            $currentImageCount = $product->images()->count();
-            $newImageCount = count($request->file('images'));
-            $maxImages = config('cloudinary.max_files_per_product', 10);
+            DB::beginTransaction();
 
-            if (($currentImageCount + $newImageCount) > $maxImages) {
+            try {
+                // Upload new main image to Cloudinary
+                $uploadResult = $this->cloudinaryService->uploadImage(
+                    $request->file('main_image'),
+                    $productId
+                );
+
+                if (!$uploadResult['success']) {
+                    throw new \Exception('Có lỗi khi upload ảnh chính: ' . $uploadResult['error']);
+                }
+
+                // Check if product already has a main image
+                $existingMainImage = $product->images()->where('is_main', true)->first();
+
+                if ($existingMainImage) {
+                    // Delete old main image from Cloudinary
+                    $oldPublicId = $this->cloudinaryService->extractPublicId($existingMainImage->image_url);
+                    if ($oldPublicId) {
+                        try {
+                            $this->cloudinaryService->deleteImage($oldPublicId);
+                        } catch (\Exception $e) {
+                            \Log::warning('Failed to delete old main image from Cloudinary: ' . $e->getMessage());
+                        }
+                    }
+
+                    // Update existing main image record
+                    $existingMainImage->update([
+                        'image_url' => $uploadResult['secure_url'],
+                        'updated_at' => now()
+                    ]);
+
+                    $mainImage = $existingMainImage;
+                } else {
+                    // Create new main image record
+                    $mainImage = ProductImage::create([
+                        'product_id' => $productId,
+                        'image_url' => $uploadResult['secure_url'],
+                        'is_main' => true
+                    ]);
+                }
+
+                DB::commit();
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Upload ảnh chính thành công',
+                    'data' => [
+                        'main_image' => $mainImage,
+                        'cloudinary_info' => [
+                            'public_id' => $uploadResult['public_id'],
+                            'width' => $uploadResult['width'],
+                            'height' => $uploadResult['height'],
+                            'format' => $uploadResult['format'],
+                            'bytes' => $uploadResult['bytes']
+                        ],
+                        'product' => $product->load(['images', 'category'])
+                    ]
+                ], 201);
+
+            } catch (\Exception $e) {
+                DB::rollback();
+
+                // Clean up uploaded image from Cloudinary if database save failed
+                if (isset($uploadResult['public_id'])) {
+                    try {
+                        $this->cloudinaryService->deleteImage($uploadResult['public_id']);
+                    } catch (\Exception $cleanupError) {
+                        \Log::warning('Failed to cleanup Cloudinary image: ' . $cleanupError->getMessage());
+                    }
+                }
+
+                throw $e;
+            }
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Upload ảnh chính thất bại',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * 🆕 Upload SECONDARY images for a product (multiple images)
+     *
+     * @param Request $request
+     * @param int $productId
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function uploadSecondaryImages(Request $request, int $productId)
+    {
+        try {
+            $user = Auth::user();
+            $product = Product::findOrFail($productId);
+
+            // Check if user owns the product
+            if ($user->role !== 'seller' || $product->seller_id !== $user->id) {
                 return response()->json([
                     'success' => false,
-                    'message' => "Sản phẩm chỉ được có tối đa {$maxImages} ảnh. Hiện tại có {$currentImageCount} ảnh."
+                    'message' => 'Bạn không có quyền upload ảnh cho sản phẩm này'
+                ], 403);
+            }
+
+            // Validate request - Multiple secondary images
+            $request->validate([
+                'secondary_images' => [
+                    'required',
+                    'array',
+                    'min:1',
+                    'max:' . (config('cloudinary.max_files_per_product', 10) - 1) // -1 for main image
+                ],
+                'secondary_images.*' => [
+                    'required',
+                    'image',
+                    'mimes:jpeg,jpg,png,webp,gif',
+                    'max:' . (config('cloudinary.max_file_size', 10485760) / 1024) // Convert to KB
+                ]
+            ], [
+                'secondary_images.required' => 'Vui lòng chọn ít nhất một ảnh phụ',
+                'secondary_images.array' => 'Dữ liệu ảnh không hợp lệ',
+                'secondary_images.min' => 'Vui lòng chọn ít nhất một ảnh phụ',
+                'secondary_images.max' => 'Tối đa ' . (config('cloudinary.max_files_per_product', 10) - 1) . ' ảnh phụ cho mỗi sản phẩm',
+                'secondary_images.*.required' => 'File ảnh không được để trống',
+                'secondary_images.*.image' => 'File phải là ảnh',
+                'secondary_images.*.mimes' => 'Ảnh phải có định dạng: jpeg, jpg, png, webp, gif',
+                'secondary_images.*.max' => 'Kích thước ảnh không được vượt quá ' . round(config('cloudinary.max_file_size', 10485760) / 1024 / 1024, 2) . 'MB',
+            ]);
+
+            // Check current secondary image count
+            $currentSecondaryCount = $product->images()->where('is_main', false)->count();
+            $newImageCount = count($request->file('secondary_images'));
+            $maxSecondaryImages = config('cloudinary.max_files_per_product', 10) - 1; // -1 for main image
+
+            if (($currentSecondaryCount + $newImageCount) > $maxSecondaryImages) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Sản phẩm chỉ được có tối đa {$maxSecondaryImages} ảnh phụ. Hiện tại có {$currentSecondaryCount} ảnh phụ."
                 ], 422);
             }
 
             $uploadedImages = [];
-            $mainImageIndex = $request->input('main_image_index', 0);
 
             DB::beginTransaction();
 
             try {
                 // Upload images to Cloudinary
                 $uploadResult = $this->cloudinaryService->uploadMultipleImages(
-                    $request->file('images'),
+                    $request->file('secondary_images'),
                     $productId
                 );
 
                 if (!$uploadResult['success']) {
-                    throw new \Exception('Có lỗi khi upload ảnh: ' . json_encode($uploadResult['errors']));
+                    throw new \Exception('Có lỗi khi upload ảnh phụ: ' . json_encode($uploadResult['errors']));
                 }
 
-                // Save image records to database
-                foreach ($uploadResult['uploaded'] as $index => $cloudinaryResult) {
-                    $isMain = ($index === $mainImageIndex && $currentImageCount === 0); // Only set main if no existing images
-
+                // Save image records to database (ALL are secondary images)
+                foreach ($uploadResult['uploaded'] as $cloudinaryResult) {
                     $productImage = ProductImage::create([
                         'product_id' => $productId,
                         'image_url' => $cloudinaryResult['secure_url'],
-                        'is_main' => $isMain
+                        'is_main' => false // ALL secondary images
                     ]);
 
                     $uploadedImages[] = $productImage;
@@ -117,10 +230,19 @@ class ProductImageController extends Controller
 
                 return response()->json([
                     'success' => true,
-                    'message' => 'Upload ảnh thành công',
+                    'message' => 'Upload ảnh phụ thành công',
                     'data' => [
-                        'uploaded_images' => $uploadedImages,
+                        'secondary_images' => $uploadedImages,
                         'total_uploaded' => count($uploadedImages),
+                        'cloudinary_info' => array_map(function($result) {
+                            return [
+                                'public_id' => $result['public_id'],
+                                'width' => $result['width'],
+                                'height' => $result['height'],
+                                'format' => $result['format'],
+                                'bytes' => $result['bytes']
+                            ];
+                        }, $uploadResult['uploaded']),
                         'product' => $product->load(['images', 'category'])
                     ]
                 ], 201);
@@ -131,7 +253,11 @@ class ProductImageController extends Controller
                 // Clean up uploaded images from Cloudinary if database save failed
                 if (!empty($uploadResult['uploaded'])) {
                     $publicIds = array_column($uploadResult['uploaded'], 'public_id');
-                    $this->cloudinaryService->deleteMultipleImages($publicIds);
+                    try {
+                        $this->cloudinaryService->deleteMultipleImages($publicIds);
+                    } catch (\Exception $cleanupError) {
+                        \Log::warning('Failed to cleanup Cloudinary images: ' . $cleanupError->getMessage());
+                    }
                 }
 
                 throw $e;
@@ -140,7 +266,7 @@ class ProductImageController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Upload ảnh thất bại',
+                'message' => 'Upload ảnh phụ thất bại',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -168,6 +294,14 @@ class ProductImageController extends Controller
                 ], 403);
             }
 
+            // Prevent deletion of main image if there are no other images
+            if ($image->is_main && $product->images()->count() <= 1) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Không thể xóa ảnh chính duy nhất. Vui lòng upload ảnh chính mới trước khi xóa.'
+                ], 422);
+            }
+
             DB::beginTransaction();
 
             try {
@@ -176,15 +310,20 @@ class ProductImageController extends Controller
 
                 // Delete from Cloudinary
                 if ($publicId) {
-                    $this->cloudinaryService->deleteImage($publicId);
+                    try {
+                        $this->cloudinaryService->deleteImage($publicId);
+                    } catch (\Exception $e) {
+                        \Log::warning('Failed to delete image from Cloudinary: ' . $e->getMessage());
+                    }
                 }
 
                 // Delete from database
+                $wasMain = $image->is_main;
                 $image->delete();
 
-                // If this was the main image, set another image as main
-                if ($image->is_main) {
-                    $newMainImage = $product->images()->first();
+                // If this was the main image, promote first secondary image to main
+                if ($wasMain) {
+                    $newMainImage = $product->images()->where('is_main', false)->first();
                     if ($newMainImage) {
                         $newMainImage->update(['is_main' => true]);
                     }
@@ -194,8 +333,9 @@ class ProductImageController extends Controller
 
                 return response()->json([
                     'success' => true,
-                    'message' => 'Xóa ảnh thành công',
+                    'message' => $wasMain ? 'Xóa ảnh chính thành công' : 'Xóa ảnh phụ thành công',
                     'data' => [
+                        'deleted_image_type' => $wasMain ? 'main' : 'secondary',
                         'product' => $product->load(['images', 'category'])
                     ]
                 ], 200);
@@ -215,7 +355,7 @@ class ProductImageController extends Controller
     }
 
     /**
-     * Set main image for product
+     * Set main image for product (promote secondary to main)
      *
      * @param int $productId
      * @param int $imageId
@@ -234,6 +374,14 @@ class ProductImageController extends Controller
                     'success' => false,
                     'message' => 'Bạn không có quyền thay đổi ảnh chính'
                 ], 403);
+            }
+
+            // Check if image is already main
+            if ($image->is_main) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Ảnh này đã là ảnh chính'
+                ], 422);
             }
 
             DB::beginTransaction();
@@ -304,6 +452,7 @@ class ProductImageController extends Controller
                 'message' => 'Lấy URL biến đổi thành công',
                 'data' => [
                     'image_id' => $imageId,
+                    'image_type' => $image->is_main ? 'main' : 'secondary',
                     'original_url' => $image->image_url,
                     'transformations' => $transformations
                 ]
@@ -319,13 +468,12 @@ class ProductImageController extends Controller
     }
 
     /**
-     * Reorder product images
+     * Get product images summary
      *
      * @param int $productId
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
-    public function reorderImages(int $productId, Request $request)
+    public function getProductImages(int $productId)
     {
         try {
             $user = Auth::user();
@@ -335,68 +483,29 @@ class ProductImageController extends Controller
             if ($user->role !== 'seller' || $product->seller_id !== $user->id) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Bạn không có quyền sắp xếp lại ảnh'
+                    'message' => 'Bạn không có quyền xem ảnh sản phẩm này'
                 ], 403);
             }
 
-            $request->validate([
-                'image_order' => 'required|array',
-                'image_order.*' => 'required|integer|exists:product_images,id',
-                'main_image_id' => 'sometimes|integer|exists:product_images,id'
-            ]);
+            $mainImage = $product->images()->where('is_main', true)->first();
+            $secondaryImages = $product->images()->where('is_main', false)->get();
 
-            $imageOrder = $request->input('image_order');
-            $mainImageId = $request->input('main_image_id');
-
-            // Verify all images belong to this product
-            $productImageIds = $product->images()->pluck('id')->toArray();
-            $invalidIds = array_diff($imageOrder, $productImageIds);
-
-            if (!empty($invalidIds)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Một số ảnh không thuộc về sản phẩm này'
-                ], 422);
-            }
-
-            DB::beginTransaction();
-
-            try {
-                // Reset main image status
-                $product->images()->update(['is_main' => false]);
-
-                // Update image order and set main image
-                foreach ($imageOrder as $order => $imageId) {
-                    $updateData = ['updated_at' => now()];
-                    
-                    if ($mainImageId && $imageId == $mainImageId) {
-                        $updateData['is_main'] = true;
-                    } elseif (!$mainImageId && $order === 0) {
-                        $updateData['is_main'] = true; // First image as main if no main specified
-                    }
-
-                    ProductImage::where('id', $imageId)->update($updateData);
-                }
-
-                DB::commit();
-
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Sắp xếp ảnh thành công',
-                    'data' => [
-                        'product' => $product->load(['images', 'category'])
-                    ]
-                ], 200);
-
-            } catch (\Exception $e) {
-                DB::rollback();
-                throw $e;
-            }
+            return response()->json([
+                'success' => true,
+                'message' => 'Lấy danh sách ảnh thành công',
+                'data' => [
+                    'main_image' => $mainImage,
+                    'secondary_images' => $secondaryImages,
+                    'total_images' => $product->images()->count(),
+                    'max_secondary_images' => config('cloudinary.max_files_per_product', 10) - 1,
+                    'can_add_more_secondary' => $secondaryImages->count() < (config('cloudinary.max_files_per_product', 10) - 1)
+                ]
+            ], 200);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Sắp xếp ảnh thất bại',
+                'message' => 'Lỗi khi lấy danh sách ảnh',
                 'error' => $e->getMessage()
             ], 500);
         }
