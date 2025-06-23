@@ -28,9 +28,13 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'role',      // customer, seller, admin
-        'phone',     // số điện thoại
-        'address',   // địa chỉ
+        'role',         // customer, seller, admin
+        'phone',        // số điện thoại
+        'address',      // địa chỉ
+        'avatar_url',   // URL ảnh avatar
+        'birth_date',   // ngày sinh
+        'gender',       // giới tính
+        'bio',          // tiểu sử ngắn
     ];
 
     /**
@@ -50,6 +54,7 @@ class User extends Authenticatable
     protected $casts = [
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
+        'birth_date' => 'date',
     ];
 
     /**
@@ -58,7 +63,7 @@ class User extends Authenticatable
      * @var array
      */
     protected $attributes = [
-        'role' => 'customer', // Role mặc định khi đăng ký
+        'role' => 'customer', // Role mặc định khi đăng ký (nhưng có thể override)
     ];
 
     /**

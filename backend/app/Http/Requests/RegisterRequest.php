@@ -49,6 +49,11 @@ class RegisterRequest extends FormRequest
                     ->symbols() // Phải có ký tự đặc biệt
                     ->uncompromised(), // Kiểm tra password không bị lộ
             ],
+            'role' => [
+                'nullable',
+                'string',
+                'in:customer,seller' // Chỉ cho phép customer hoặc seller
+            ],
             'phone' => [
                 'nullable', // later change to required if needed
                 'string',
@@ -60,6 +65,28 @@ class RegisterRequest extends FormRequest
                 'nullable', // later change to required if needed
                 'string',
                 'max:500'
+            ],
+            'avatar_url' => [
+                'nullable',
+                'string',
+                'url',
+                'max:255'
+            ],
+            'birth_date' => [
+                'nullable',
+                'date',
+                'before:today', // Ngày sinh phải trước hôm nay
+                'after:1900-01-01' // Ngày sinh hợp lý
+            ],
+            'gender' => [
+                'nullable',
+                'string',
+                'in:male,female,other'
+            ],
+            'bio' => [
+                'nullable',
+                'string',
+                'max:1000' // Giới hạn bio 1000 ký tự
             ],
         ];
     }
@@ -84,11 +111,24 @@ class RegisterRequest extends FormRequest
             'password.confirmed' => 'Xác nhận mật khẩu không khớp',
             'password.min' => 'Mật khẩu phải có ít nhất 8 ký tự',
             
+            'role.in' => 'Vai trò chỉ có thể là customer hoặc seller',
+            
             'phone.regex' => 'Số điện thoại không đúng định dạng',
             'phone.min' => 'Số điện thoại phải có ít nhất 10 số',
             'phone.max' => 'Số điện thoại không được vượt quá 20 số',
             
             'address.max' => 'Địa chỉ không được vượt quá 500 ký tự',
+            
+            'avatar_url.url' => 'URL avatar không đúng định dạng',
+            'avatar_url.max' => 'URL avatar không được vượt quá 255 ký tự',
+            
+            'birth_date.date' => 'Ngày sinh không đúng định dạng',
+            'birth_date.before' => 'Ngày sinh phải trước ngày hôm nay',
+            'birth_date.after' => 'Ngày sinh không hợp lệ',
+            
+            'gender.in' => 'Giới tính chỉ có thể là male, female hoặc other',
+            
+            'bio.max' => 'Tiểu sử không được vượt quá 1000 ký tự',
         ];
     }
 }

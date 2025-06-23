@@ -23,14 +23,18 @@ class AuthController extends Controller
     public function register(RegisterRequest $request)
     {
         try {
-            // Tạo user mới với role mặc định là 'customer'
+            // Tạo user mới với các thông tin từ request
             $user = User::create([
                 'name' => $request->name,
                 'email' => $request->email,
                 'password' => Hash::make($request->password),
+                'role' => $request->role ?? 'customer', // Mặc định customer nếu không chọn
                 'phone' => $request->phone ?? null,
                 'address' => $request->address ?? null,
-                'role' => 'customer', // Role mặc định
+                'avatar_url' => $request->avatar_url ?? null,
+                'birth_date' => $request->birth_date ?? null,
+                'gender' => $request->gender ?? null,
+                'bio' => $request->bio ?? null,
             ]);
 
             // Tạo token cho user mới
@@ -47,6 +51,10 @@ class AuthController extends Controller
                         'role' => $user->role,
                         'phone' => $user->phone,
                         'address' => $user->address,
+                        'avatar_url' => $user->avatar_url,
+                        'birth_date' => $user->birth_date,
+                        'gender' => $user->gender,
+                        'bio' => $user->bio,
                         'created_at' => $user->created_at,
                     ],
                     'access_token' => $token,
@@ -99,6 +107,10 @@ class AuthController extends Controller
                         'role' => $user->role,
                         'phone' => $user->phone,
                         'address' => $user->address,
+                        'avatar_url' => $user->avatar_url,
+                        'birth_date' => $user->birth_date,
+                        'gender' => $user->gender,
+                        'bio' => $user->bio,
                         'created_at' => $user->created_at,
                     ],
                     'access_token' => $token,
@@ -167,6 +179,10 @@ class AuthController extends Controller
                     'role' => $user->role,
                     'phone' => $user->phone,
                     'address' => $user->address,
+                    'avatar_url' => $user->avatar_url,
+                    'birth_date' => $user->birth_date,
+                    'gender' => $user->gender,
+                    'bio' => $user->bio,
                     'created_at' => $user->created_at,
                     'updated_at' => $user->updated_at,
                 ]
