@@ -28,6 +28,9 @@ require __DIR__.'/products.php';
 // Include Image routes (Protected API cho seller quản lý hình ảnh)
 require __DIR__.'/images.php';
 
+// 🆕 Include Cart routes (Protected API cho customer quản lý giỏ hàng)
+require __DIR__.'/cart.php';
+
 /*
 |--------------------------------------------------------------------------
 | Fallback Route

@@ -9,6 +9,7 @@ ShuttlePlay/
 │   │   ├── Http/                          
 │   │   │   ├── Controllers/                --> Chứa toàn bộ các API Controller
 │   │   │   │   ├── AuthController.php         --> Xử lý Login/Register → trả token
+│   │   │   │   ├── CartController.php
 │   │   │   │   ├── CategoryController.php
 │   │   │   │   ├── CheckoutController.php     --> Xử lý luồng Checkout → tạo đơn hàng
 │   │   │   │   ├── Controller.php
@@ -29,15 +30,20 @@ ShuttlePlay/
 │   │   │   │   ├── ValidateSignature.php
 │   │   │   │   ├── VerifyCsrfToken.php
 │   │   │   ├── Requests/                   --> Chứa Form Validation cho các API
+│   │   │   │   ├── AddToCartRequest.php
 │   │   │   │   ├── CreateProductRequest.php   --> 🆕 Validation cho tạo sản phẩm
 │   │   │   │   ├── ImageUploadRequest.php
 │   │   │   │   ├── LoginRequest.php
 │   │   │   │   ├── RegisterRequest.php
+│   │   │   │   ├── UpdateCartRequest.php    
 │   │   │   │   ├── UpdateProductRequest.php   --> 🆕 Validation cho cập nhật sản phẩm
 │   │   │   ├── Resources/                  --> Chuẩn hóa API response (OrderResource, ProductResource, ...)
+│   │   │   │   ├── CartResource.php
 │   │   │   │   ├── CustomerProductResource.php
 │   │   │   ├── Kernel.php
 │   │   ├── Models/                         --> Chứa các model chính
+│   │   │   ├── Cart.php
+│   │   │   ├── CartItem.php
 │   │   │   ├── Category.php                   --> 🆕 Model cho danh mục sản phẩm
 │   │   │   ├── Product.php                    --> 🆕 Model cho sản phẩm
 │   │   │   ├── ProductImage.php               --> 🆕 Model cho hình ảnh sản phẩm
@@ -50,6 +56,7 @@ ShuttlePlay/
 │   │   │   ├── EventServiceProvider.php
 │   │   │   ├── RouteServiceProvider.php
 │   │   ├── Services/                       --> Tầng xử lý Business Logic riêng
+│   │   │   ├── CartService.php
 │   │   │   ├── CloudinaryService.php
 │   │   │   ├── OrderService.php                  --> Xử lý nghiệp vụ đặt hàng
 │   │   │   ├── PaymentService.php                --> Xử lý nghiệp vụ thanh toán (nếu có)
@@ -106,6 +113,7 @@ ShuttlePlay/
 │   ├── routes/
 │   │   ├── api.php                         --> 🔄 Updated: Include product routes
 │   │   ├── auth.php                        --> Authentication routes
+│   │   ├── cart.php
 │   │   ├── channels.php
 │   │   ├── console.php
 │   │   ├── customer-products.php
@@ -130,6 +138,7 @@ ShuttlePlay/
 │   ├── tests/                              --> Unit tests với PHPUnit
 │   │   │   ├── Feature/
 │   │   │   │   ├── AuthenticationTest.php
+│   │   │   │   ├── CartTest.php
 │   │   │   │   ├── CustomerFeaturesTest.php
 │   │   │   │   ├── ExampleTest.php
 │   │   │   │   ├── ProductTest.php            --> 🆕 Test cases cho product functionality

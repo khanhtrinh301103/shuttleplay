@@ -113,11 +113,26 @@ class User extends Authenticatable
     }
 
     /**
-     * Relationship với bảng shopping_carts
+     * 🆕 Relationship với bảng shopping_carts (customer)
      */
-    public function shoppingCart()
+    public function cart()
     {
-        return $this->hasOne(\App\Models\ShoppingCart::class, 'user_id');
+        return $this->hasOne(\App\Models\Cart::class, 'user_id');
+    }
+
+    /**
+     * 🆕 Relationship với cart items thông qua cart (customer)
+     */
+    public function cartItems()
+    {
+        return $this->hasManyThrough(
+            \App\Models\CartItem::class,
+            \App\Models\Cart::class,
+            'user_id', // Foreign key on carts table
+            'cart_id', // Foreign key on cart_items table
+            'id',      // Local key on users table
+            'id'       // Local key on carts table
+        );
     }
 
     /**
@@ -126,5 +141,39 @@ class User extends Authenticatable
     public function addresses()
     {
         return $this->hasMany(\App\Models\UserAddress::class, 'user_id');
+    }
+
+    /**
+     * 🆕 Get or create cart for this user
+     */
+    public function getOrCreateCart()
+    {
+        if (!$this->cart) {
+            $this->cart()->create();
+        }
+        
+        return $this->cart;
+    }
+
+    /**
+     * 🆕 Get total items in user's cart
+     */
+    public function getCartItemsCountAttribute()
+    {
+        return $this->cart ? $this->cart->items()->sum('quantity') : 0;
+    }
+
+    /**
+     * 🆕 Get total amount in user's cart
+     */
+    public function getCartTotalAmountAttribute()
+    {
+        if (!$this->cart) {
+            return 0;
+        }
+
+        return $this->cart->items()->with('product')->get()->sum(function($item) {
+            return $item->quantity * ($item->product ? $item->product->price : 0);
+        });
     }
 }
