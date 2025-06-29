@@ -169,22 +169,24 @@ ShuttlePlay/
 │    ├── node_modules/
 │    ├── public/                             --> Static file public (favicon, index.html)
 │    ├── src/
+│    │   ├── __tests__/                      --> nơi chứa test global 
+│    │   │   ├── App.test.tsx
 │    │   ├── api/                            --> Nơi tập trung các file call API
 │    │   ├── components/                     --> Các UI component tái sử dụng
 │    │   │   ├── common/                          --> Các component chung (Button, Card, Modal, Header, Footer)
 │    │   │   ├── layout/                          --> Các Layout cho từng Role (MainLayout, AdminLayout, SellerLayout, CustomerLayout)
+│    │   ├── constants/                       --> Define constants dùng chung toàn app (giúp tránh hardcode)
+│    │   ├── contexts/                        --> React Context → Global State toàn App
+│    │   ├── hooks/                           --> Custom React hooks → tách logic ra dễ dùng
 │    │   ├── pages/                          --> Các Page của App (theo Route)
 │    │   │   ├── admin/                           --> Các Page cho Admin role
 │    │   │   ├── seller/                          --> Các Page cho Seller role
 │    │   │   ├── customer/                        --> Các Page cho Customer role
 │    │   │   ├── auth/                            --> Page Login, Register
-│    │   ├── hooks/                           --> Custom React hooks → tách logic ra dễ dùng
-│    │   ├── contexts/                        --> React Context → Global State toàn App
-│    │   ├── services/                        --> Business Logic (tầng dịch vụ riêng)
-│    │   ├── utils/                           --> Các function tiện ích dùng chung
-│    │   ├── constants/                       --> Define constants dùng chung toàn app (giúp tránh hardcode)
 │    │   ├── router/                          --> React Router config + Route Guard
-│    │   ├── App.test.tsx
+│    │   ├── services/                        --> Business Logic (tầng dịch vụ riêng)
+│    │   ├── styles/
+│    │   ├── utils/                           --> Các function tiện ích dùng chung
 │    │   ├── App.tsx                          --> App entry (React Router + Provider context đặt ở đây)
 │    │   ├── index.tsx                        --> Entry file React (render React App)
 │    │   ├── logo.svg
